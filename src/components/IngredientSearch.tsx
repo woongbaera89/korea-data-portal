@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { searchIngredient } from "@/lib/api";
 import { IngredientItem } from "@/types/ingredient";
 
 export default function IngredientSearch() {
+  const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,10 @@ export default function IngredientSearch() {
   const [totalCount, setTotalCount] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const itemsPerPage = 100;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +110,10 @@ export default function IngredientSearch() {
   };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="max-w-8xl mx-auto p-4">

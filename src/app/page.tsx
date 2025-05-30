@@ -1,5 +1,3 @@
-"use client";
-
 import IngredientSearch from "@/components/IngredientSearch";
 
 export default function Home() {
