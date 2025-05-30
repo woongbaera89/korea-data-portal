@@ -1,61 +1,77 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { searchIngredient } from "@/lib/api";
 import { IngredientItem } from "@/types/ingredient";
 
 export default function IngredientSearch() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [results, setResults] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    Number(searchParams.get("p")) || 1
+  );
   const [totalCount, setTotalCount] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const itemsPerPage = 100;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const updateUrl = useCallback(
+    (q: string, p: number) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (p > 1) params.set("p", p.toString());
+      router.push(`?${params.toString()}`, { scroll: false });
+    },
+    [router]
+  );
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) {
-      setError("검색어를 입력해주세요.");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setResults([]);
-    setCurrentPage(1);
-    setHasSearched(true);
-
-    try {
-      const response = await searchIngredient(searchTerm, 1);
-
-      if (response.body.items && Array.isArray(response.body.items)) {
-        setResults(response.body.items);
-        setTotalCount(response.body.totalCount);
-      } else {
-        setError("검색 결과를 불러오는데 실패했습니다.");
+  const handleSearch = useCallback(
+    async (e: React.FormEvent, page = 1) => {
+      e.preventDefault();
+      if (!searchTerm.trim()) {
+        setError("검색어를 입력해주세요.");
+        return;
       }
-    } catch (err) {
-      console.error("Search error:", err);
-      setError(
-        err instanceof Error ? err.message : "검색 중 오류가 발생했습니다."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      setLoading(true);
+      setError(null);
+      setResults([]);
+      setCurrentPage(page);
+      setHasSearched(true);
+      updateUrl(searchTerm, page);
+
+      try {
+        const response = await searchIngredient(searchTerm, page);
+
+        if (response.body.items && Array.isArray(response.body.items)) {
+          setResults(response.body.items);
+          setTotalCount(response.body.totalCount);
+        } else {
+          setError("검색 결과를 불러오는데 실패했습니다.");
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        setError(
+          err instanceof Error ? err.message : "검색 중 오류가 발생했습니다."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchTerm, updateUrl]
+  );
 
   const handlePageChange = async (page: number) => {
     if (page < 1 || page > Math.ceil(totalCount / itemsPerPage)) return;
 
     setLoading(true);
     setError(null);
+    updateUrl(searchTerm, page);
 
     try {
       const response = await searchIngredient(searchTerm, page);
@@ -110,6 +126,21 @@ export default function IngredientSearch() {
   };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  useEffect(() => {
+    setMounted(true);
+    // URL에 검색어가 있으면 자동으로 검색 실행
+    if (searchParams.get("q")) {
+      const page = searchParams.get("p") ? Number(searchParams.get("p")) : 1;
+      handleSearch(
+        {
+          preventDefault: () => {},
+        } as FormEvent<HTMLFormElement>,
+        page
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!mounted) {
     return null;
