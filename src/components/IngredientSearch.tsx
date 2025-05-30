@@ -129,7 +129,7 @@ export default function IngredientSearch() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300"
+            className="px-6 py-2 w-32 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300"
           >
             {loading ? "검색 중..." : "검색"}
           </button>
@@ -149,7 +149,7 @@ export default function IngredientSearch() {
               onClick={handleCopyToExcel}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >
-              엑셀 복사
+              테이블 복사 (엑셀용)
             </button>
           </div>
 
